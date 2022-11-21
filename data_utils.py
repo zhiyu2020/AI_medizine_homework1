@@ -14,7 +14,6 @@ from torch.utils.data import Dataset, DataLoader
 
 DATA_DIR = './data/brain_age'
 
-
 def get_image_dataloaders(
     img_size: int,
     batch_size: int,
@@ -62,6 +61,24 @@ class BrainAgeImageDataset(Dataset):
         age = self.df.iloc[[idx]]['age'].item()
         return img, age
 
+def gmm_normalisation(img, mask):
+    from intensity_normalization.normalize as gmm
+    normalized_img = None
+    normalized_img = gmm.gmm_normalize(img, mask)
+    return normalized_img
+
+def n4_bias_correction(img, mask):
+    for file_name in file_names:
+        img = sitk.ReadImage(file_name)
+        mask = 
+    inputImage = sitk.ReadImage(self.file_name)
+    maskImage = sitk.OtsuThreshold(inputImage, 0, 1, 200)
+    inputImage = sitk.Cast(inputImage, sitk.sitkFloat32)
+    corrector = sitk.N4BiasFieldCorrectionImageFilter()
+    output = corrector.Execute(inputImage, maskImage)
+    sitk.WriteImage(output, self.n4_bias_path)
+
+
 
 def normalize(img: np.ndarray, mask: np.ndarray):
     """Normalize a brain MR-image to have zero mean and unit variance.
@@ -81,6 +98,9 @@ def normalize(img: np.ndarray, mask: np.ndarray):
     mean_val2 = np.mean(img[img > 0])
     std_val = np.std(img[img > 0])
     normalized_img = (img - mean_val2) / std_val
+    normalized_img = normalized_img * mask
+    normalized_img = normalized_img.astype(np.float32)
+
     # --------------------------------- END -----------------------------------
     return normalized_img
 
@@ -106,6 +126,8 @@ def preprocess(img: np.ndarray, mask: np.ndarray, img_size: int) -> np.ndarray:
     """
     # Feel free to add more pre-processing here.
     # ------------------------- ADD YOUR CODE HERE ----------------------------
+    # SimpleITK N4 bias field correction N4
+    # Template registration
     preprocessed_img = normalize(img, mask)
     preprocessed_img = resize(preprocessed_img, [img_size] * 3)
     # --------------------------------- END -----------------------------------
